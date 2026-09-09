@@ -3,11 +3,9 @@
   "private": true,
   "description": "SVAF 友链和赞助数据源 — 构建后输出聚合 JSON",
   "scripts": {
-    "build": "node scripts/build.js",
-    "test": "node --test .github/scripts/*.test.js"
+    "build": "node scripts/build.js"
   },
   "devDependencies": {
-    "@playwright/test": "^1.61.1",
-    "ipaddr.js": "2.5.0"
+    "@playwright/test": "^1.61.1"
   }
 }

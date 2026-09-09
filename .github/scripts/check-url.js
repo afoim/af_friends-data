@@ -18,7 +18,6 @@
  */
 
 const { chromium } = require('@playwright/test');
-const { assertPublicUrl } = require('./public-url');
 
 // ── Configuration ──────────────────────────────────────────────
 const MAX_RETRIES = 2;
@@ -99,7 +98,6 @@ function buildAntiDetectionScript(userAgent) {
 // ── Main logic ─────────────────────────────────────────────────
 
 async function checkUrl(url) {
-  await assertPublicUrl(url);
   let lastError;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -114,7 +112,6 @@ async function checkUrl(url) {
           '--disable-setuid-sandbox',
           '--disable-infobars',
           '--window-size=1920,1080',
-          '--force-webrtc-ip-handling-policy=disable_non_proxied_udp',
         ],
       });
 
@@ -125,7 +122,6 @@ async function checkUrl(url) {
 
       const context = await browser.newContext({
         userAgent,
-        serviceWorkers: 'block',
         viewport: { width: 1920, height: 1080 },
         locale: 'zh-CN',
         timezoneId: 'Asia/Shanghai',
@@ -135,32 +131,6 @@ async function checkUrl(url) {
       });
 
       const page = await context.newPage();
-      let mainFinalUrl = url;
-      // Validate each redirect ourselves. Native redirect chains can otherwise
-      // escape a route handler after the first request. No write methods or WS.
-      await context.routeWebSocket('**/*', socket => socket.close());
-      await context.route('**/*', async route => {
-        const request = route.request();
-        if (!['GET', 'HEAD'].includes(request.method())) return route.abort();
-        let next = request.url();
-        try {
-          for (let hop = 0; hop < 6; hop++) {
-            await assertPublicUrl(next);
-            const response = await route.fetch({ url: next, maxRedirects: 0, timeout: TIMEOUT_MS });
-            const location = response.headers().location;
-            if (response.status() >= 300 && response.status() < 400 && location) {
-              next = new URL(location, next).href;
-              await response.dispose();
-              continue;
-            }
-            if (request.isNavigationRequest() && request.frame() === page.mainFrame()) mainFinalUrl = next;
-            await route.fulfill({ response });
-            await response.dispose();
-            return;
-          }
-        } catch { /* Reject the request, never fall back to unchecked network access. */ }
-        await route.abort();
-      });
       await page.addInitScript(buildAntiDetectionScript(userAgent));
 
       // Use domcontentloaded first so we don't hang forever on pages with
@@ -179,8 +149,7 @@ async function checkUrl(url) {
       // If browser.close() throws we must not lose the data we already
       // successfully fetched.
       const body = await page.content();
-      const finalUrl = mainFinalUrl;
-      const links = await page.locator('a[href]').evaluateAll(nodes => nodes.slice(0, 5000).map(node => node.getAttribute('href')));
+      const finalUrl = page.url();
       const status = response.status();
       const headers = response.headers();
       const contentType = headers['content-type'] || '';
@@ -190,7 +159,6 @@ async function checkUrl(url) {
         status,
         finalUrl,
         contentType,
-        links,
         bodyLength: body.length,
         body:
           body.length <= MAX_BODY_SIZE
