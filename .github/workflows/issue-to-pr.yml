@@ -2,7 +2,7 @@ name: issue-to-pr
 
 on:
   issues:
-    types: [opened, reopened]
+    types: [opened, edited, reopened]
 
 permissions:
   contents: write
@@ -64,7 +64,7 @@ jobs:
                 owner,
                 repo,
                 issue_number: issueNumber,
-                body: `无法创建友链数据 PR：\n\n- ${problems.join('\n- ')}\n\n请修正后关闭并重新打开此 Issue 以重试。`,
+                body: `无法创建友链数据 PR：\n\n- ${problems.join('\n- ')}\n\n请直接编辑此 Issue 修正内容，保存后会自动重新处理。`,
               });
               return;
             }
@@ -98,26 +98,20 @@ jobs:
               state: 'open',
               head: `${owner}:${branch}`,
             });
-            if (openPulls.data.length) {
-              await github.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number: issueNumber,
-                body: `该申请已有待处理 PR：${openPulls.data[0].html_url}`,
-              });
-              return;
-            }
+            const existingPull = openPulls.data[0] || null;
 
-            const baseRef = await github.rest.git.getRef({ owner, repo, ref: `heads/${defaultBranch}` });
-            try {
-              await github.rest.git.createRef({
-                owner,
-                repo,
-                ref: `refs/heads/${branch}`,
-                sha: baseRef.data.object.sha,
-              });
-            } catch (error) {
-              if (error.status !== 422) throw error;
+            if (!existingPull) {
+              const baseRef = await github.rest.git.getRef({ owner, repo, ref: `heads/${defaultBranch}` });
+              try {
+                await github.rest.git.createRef({
+                  owner,
+                  repo,
+                  ref: `refs/heads/${branch}`,
+                  sha: baseRef.data.object.sha,
+                });
+              } catch (error) {
+                if (error.status !== 422) throw error;
+              }
             }
 
             let existingSha;
@@ -133,10 +127,28 @@ jobs:
               repo,
               path,
               branch,
-              message: `friend: add ${name} from issue #${issueNumber}`,
+              message: existingPull
+                ? `friend: update ${name} from issue #${issueNumber}`
+                : `friend: add ${name} from issue #${issueNumber}`,
               content: Buffer.from(`${JSON.stringify(entry, null, 2)}\n`).toString('base64'),
               ...(existingSha ? { sha: existingSha } : {}),
             });
+
+            if (existingPull) {
+              await github.rest.pulls.update({
+                owner,
+                repo,
+                pull_number: existingPull.number,
+                title: `友链：${name}`,
+              });
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                body: `已根据 Issue 的最新内容更新数据 PR：${existingPull.html_url}\n\n自动校验会重新运行，无需修改 PR。`,
+              });
+              return;
+            }
 
             const pull = await github.rest.pulls.create({
               owner,
