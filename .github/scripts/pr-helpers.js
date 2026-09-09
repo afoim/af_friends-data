@@ -22,6 +22,12 @@ const DIRS = {
   SPONSORS_DIR: 'data/sponsors/',
 };
 
+// Equivalent public domains that are allowed to satisfy backlink verification.
+const SITE_BACKLINK_ALIASES = [
+  'https://acofork.com',
+  'https://www.acofork.com',
+];
+
 const LABELS = {
   FRIEND: '友链',
   SPONSOR: '赞助',
@@ -185,6 +191,10 @@ function extractTitle(html) {
 function verifyBacklink(html, expected) {
   if (!html || !expected) return { found: false, links: [], reason: 'empty input' };
   const target = expected.replace(/\/$/, '');
+  const acceptedTargets = new Set([
+    target,
+    ...SITE_BACKLINK_ALIASES.map((url) => url.replace(/\/$/, '')),
+  ]);
   const patterns = [
     /href\s*=\s*["']([^"']+)["']/gi,
     /href\s*=\s*([^\s>]+)/gi,
@@ -199,7 +209,7 @@ function verifyBacklink(html, expected) {
       if (!href.startsWith('http')) continue;
       foundLinks.push(href);
       const normalized = href.replace(/\/$/, '');
-      if (normalized === target) {
+      if (acceptedTargets.has(normalized)) {
         return { found: true, links: foundLinks, matchedHref: href };
       }
     }
