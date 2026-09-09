@@ -77,7 +77,11 @@ jobs:
 
             async function createComment(body) {
               const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-              const fullBody = body + buildFooter(runUrl);
+              const issueManaged = context.payload.pull_request.head.ref.startsWith('friend-issue-');
+              const issueHint = issueManaged
+                ? '\n\n> 此 PR 由友链申请 Issue 自动生成。需要修改时请直接编辑原 Issue；保存后系统会自动更新本 PR 并重新校验，无需手动修改或 push PR。'
+                : '';
+              const fullBody = body + issueHint + buildFooter(runUrl);
               try {
                 const { execSync } = require('child_process');
                 execSync(`gh api /repos/${owner}/${repo}/issues/${pull_number}/comments --method POST --input -`, {
