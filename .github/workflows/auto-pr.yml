@@ -94,11 +94,14 @@ jobs:
 
                 if (issueManaged && Number.isInteger(issueNumber) && issueNumber > 0) {
                   const marker = '<!-- friend-application-status -->';
+                  const issueFacingBody = body
+                    .replace('请确认链接可正常访问后 push 更新。', '请确认链接可正常访问后，编辑本 Issue 保存或回复“重新检查”。')
+                    .replace('请添加后 push 更新（无需评论）。', '请添加后在本 Issue 回复“重新检查”。');
                   const issueBody = [
                     marker,
                     '## 友链申请状态',
                     '',
-                    body,
+                    issueFacingBody,
                     '',
                     '---',
                     '需要修改申请信息时，直接编辑本 Issue 并保存即可重新校验。',
