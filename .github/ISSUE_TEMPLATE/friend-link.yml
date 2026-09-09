@@ -1,0 +1,62 @@
+name: 申请友链
+description: 通过表单申请加入 AcoFork 友情链接
+title: "[友链申请] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        填写下面的信息即可申请友链。提交后会自动创建数据 PR，并沿用现有自动校验流程。
+
+        你的友链页面需要已经添加本站链接：https://2x.nz/
+
+  - type: input
+    id: site_name
+    attributes:
+      label: 站点名称
+      placeholder: AcoFork
+    validations:
+      required: true
+
+  - type: input
+    id: site_url
+    attributes:
+      label: 网站 URL
+      description: 请填写完整的 http/https 地址。
+      placeholder: https://example.com/
+    validations:
+      required: true
+
+  - type: input
+    id: avatar_url
+    attributes:
+      label: 头像 URL
+      description: 请填写可公开访问的图片地址。
+      placeholder: https://example.com/avatar.png
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 站点简介
+      description: 一句话即可，可留空。
+      placeholder: 一句话介绍你的站点。
+    validations:
+      required: false
+
+  - type: input
+    id: backlink_url
+    attributes:
+      label: 友链页面 URL
+      description: 该页面必须与网站 URL 同域，并包含指向 https://2x.nz/ 的友链。
+      placeholder: https://example.com/friends/
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: 确认
+      options:
+        - label: 我已在上述友链页面添加指向 https://2x.nz/ 的友链。
+          required: true

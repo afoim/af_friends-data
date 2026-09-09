@@ -2,6 +2,12 @@
 
 SVAF 的友链和赞助数据源。
 
+## 申请友链
+
+推荐通过仓库的 **申请友链 Issue Form** 提交。Issue 会自动生成数据 Pull Request，后续继续使用现有校验与自动合并流程。
+
+旧版方式仍然支持：Fork 本仓库，在 `data/friends/` 下新增一个 JSON 文件后直接提交 Pull Request。
+
 ## 目录结构
 
 ```
