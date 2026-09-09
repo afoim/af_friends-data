@@ -177,7 +177,7 @@ jobs:
                 owner,
                 repo,
                 issue_number: issueNumber,
-                body: `已根据 Issue 的最新内容更新数据 PR：${existingPull.html_url}\n\n自动校验会重新运行，无需修改 PR。`,
+                body: `申请信息已更新，正在重新校验。无需修改 Pull Request；技术处理详情：${existingPull.html_url}。`,
               });
               return;
             }
@@ -195,5 +195,5 @@ jobs:
               owner,
               repo,
               issue_number: issueNumber,
-              body: `已创建数据 PR：${pull.data.html_url}\n\n后续继续使用现有自动校验流程；通过并合并后，本 Issue 会自动关闭。`,
+              body: `申请已受理，正在进行自动校验。后续结果会持续同步到本 Issue；如需查看技术处理详情，可访问 ${pull.data.html_url}。`,
             });
