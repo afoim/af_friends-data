@@ -3,6 +3,8 @@ name: issue-to-pr
 on:
   issues:
     types: [opened, edited, reopened]
+  issue_comment:
+    types: [created]
 
 permissions:
   contents: write
@@ -11,7 +13,7 @@ permissions:
 
 jobs:
   create_friend_pr:
-    if: ${{ startsWith(github.event.issue.title, '[友链申请]') }}
+    if: ${{ startsWith(github.event.issue.title, '[友链申请]') && (github.event_name == 'issues' || (github.event_name == 'issue_comment' && !github.event.issue.pull_request && github.event.comment.body == '重新检查')) }}
     runs-on: ubuntu-latest
     steps:
       - name: Create friend data PR
@@ -24,6 +26,36 @@ jobs:
             const issue = context.payload.issue;
             const issueNumber = issue.number;
             const body = issue.body || '';
+
+            if (context.eventName === 'issue_comment') {
+              const branch = `friend-issue-${issueNumber}`;
+              const openPulls = await github.rest.pulls.list({
+                owner,
+                repo,
+                state: 'open',
+                head: `${owner}:${branch}`,
+              });
+              const pull = openPulls.data[0];
+              if (!pull) {
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: issueNumber,
+                  body: '当前没有可重新检查的友链 PR。请先确认该申请仍在处理中。',
+                });
+                return;
+              }
+
+              await github.rest.pulls.update({ owner, repo, pull_number: pull.number, state: 'closed' });
+              await github.rest.pulls.update({ owner, repo, pull_number: pull.number, state: 'open' });
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                body: `已请求重新检查。底层 PR #${pull.number} 已重新触发自动校验，请稍候查看本 Issue 的申请状态。`,
+              });
+              return;
+            }
 
             function section(label) {
               const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

@@ -77,7 +77,9 @@ jobs:
 
             async function createComment(body) {
               const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-              const issueManaged = context.payload.pull_request.head.ref.startsWith('friend-issue-');
+              const headRef = context.payload.pull_request.head.ref;
+              const issueManaged = headRef.startsWith('friend-issue-');
+              const issueNumber = issueManaged ? Number(headRef.slice('friend-issue-'.length)) : null;
               const issueHint = issueManaged
                 ? '\n\n> 此 PR 由友链申请 Issue 自动生成。需要修改时请直接编辑原 Issue；保存后系统会自动更新本 PR 并重新校验，无需手动修改或 push PR。'
                 : '';
@@ -89,6 +91,44 @@ jobs:
                   encoding: 'utf8',
                   timeout: 15000,
                 });
+
+                if (issueManaged && Number.isInteger(issueNumber) && issueNumber > 0) {
+                  const marker = '<!-- friend-application-status -->';
+                  const issueBody = [
+                    marker,
+                    '## 友链申请状态',
+                    '',
+                    body,
+                    '',
+                    '---',
+                    '需要修改申请信息时，直接编辑本 Issue 并保存即可重新校验。',
+                    `技术处理详情：PR #${pull_number} · [查看本次 Action](${runUrl})`,
+                  ].join('\n');
+                  const commentsRaw = execSync(
+                    `gh api /repos/${owner}/${repo}/issues/${issueNumber}/comments --paginate --jq '.[]'`,
+                    { encoding: 'utf8', timeout: 30000 }
+                  );
+                  const statusComment = commentsRaw
+                    .trim()
+                    .split('\n')
+                    .filter(Boolean)
+                    .map((line) => JSON.parse(line))
+                    .find((comment) => typeof comment.body === 'string' && comment.body.includes(marker));
+
+                  if (statusComment) {
+                    execSync(`gh api /repos/${owner}/${repo}/issues/comments/${statusComment.id} --method PATCH --input -`, {
+                      input: JSON.stringify({ body: issueBody }),
+                      encoding: 'utf8',
+                      timeout: 15000,
+                    });
+                  } else {
+                    execSync(`gh api /repos/${owner}/${repo}/issues/${issueNumber}/comments --method POST --input -`, {
+                      input: JSON.stringify({ body: issueBody }),
+                      encoding: 'utf8',
+                      timeout: 15000,
+                    });
+                  }
+                }
               } catch (e) {
                 core.error(`createComment failed: ${e?.message || e}`);
               }
@@ -582,6 +622,9 @@ jobs:
 
             // Backlink verified — set OK label and auto-merge
             await setLabels({ addLabels: [LABELS.BIDIR_OK], removeLabels: [LABELS.BIDIR] });
+            if (context.payload.pull_request.head.ref.startsWith('friend-issue-')) {
+              await createComment('所有自动校验均已通过，正在合并并上线。');
+            }
 
             try {
               const { execSync } = require('child_process');
