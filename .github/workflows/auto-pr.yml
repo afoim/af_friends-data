@@ -16,7 +16,7 @@ env:
   GH_TOKEN: ${{ secrets.PAT || github.token }}
 
 concurrency:
-  group: auto-pr-${{ github.event.pull_request.number || github.event.issue.number }}
+  group: auto-pr-${{ github.event_name }}-${{ github.event.pull_request.number || github.event.issue.number }}
   cancel-in-progress: true
 
 jobs:
