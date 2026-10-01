@@ -19,7 +19,7 @@ const DATA_SPONSORS = path.join(ROOT, 'data', 'sponsors');
 const IMG_SPONSORS = path.join(ROOT, 'data', 'sponsors-img');
 
 /** Domain used to resolve relative avatar paths in output */
-const DOMAIN = 'https://raw-fas.2x.nz';
+const DOMAIN = 'https://raw-fas.acofork.com';
 
 function isNonEmptyString(v) { return typeof v === 'string' && v.trim().length > 0; }
 function isNullOrString(v)   { return v === null || typeof v === 'string'; }
