@@ -160,6 +160,7 @@ async function checkUrl(url) {
         finalUrl,
         contentType,
         bodyLength: body.length,
+        links: await page.locator('a[href]').evaluateAll(anchors => anchors.slice(0,5000).map(a => a.href).filter(href => /^https?:/.test(href))),
         body:
           body.length <= MAX_BODY_SIZE
             ? body
