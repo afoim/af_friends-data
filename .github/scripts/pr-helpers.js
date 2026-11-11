@@ -282,6 +282,7 @@ function checkUrlReachability(url, scriptPath) {
       encoding: 'utf8',
       timeout: CHECK_URL_TIMEOUT,
       maxBuffer: 10 * 1024 * 1024, // 10 MB
+      env: Object.fromEntries(Object.entries(process.env).filter(([key]) => !/TOKEN|SECRET|PASSWORD|CREDENTIAL|PRIVATE_KEY/i.test(key))),
     });
     const trimmed = (result || '').trim();
     if (!trimmed) return { ok: false, error: 'Empty response from check-url script' };
